@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OpenSpout\Reader\XLSX;
 
+use Countable;
 use DOMElement;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Row;
@@ -17,7 +18,7 @@ use OpenSpout\Reader\Wrapper\XMLReader;
 use OpenSpout\Reader\XLSX\Helper\CellHelper;
 use OpenSpout\Reader\XLSX\Helper\CellValueFormatter;
 
-final class RowIterator implements RowIteratorInterface
+final class RowIterator implements RowIteratorInterface, Countable
 {
     /**
      * Definition of XML nodes names used to parse data.
@@ -219,6 +220,24 @@ final class RowIterator implements RowIteratorInterface
     }
 
     /**
+     * Count the rows without processing the cells.
+     * NOTE: This will leave the iterator pointer at the end of the file.
+     */
+    public function count(): int
+    {
+        $this->xmlProcessor->registerCallback(self::XML_NODE_CELL, XMLProcessor::NODE_TYPE_START, [$this, 'processCountableCellStartingNode']);
+
+        $i = 0;
+        foreach ($this as $_) {
+            $i++;
+        }
+
+        $this->xmlProcessor->registerCallback(self::XML_NODE_CELL, XMLProcessor::NODE_TYPE_START, [$this, 'processCellStartingNode']);
+
+        return $i;
+    }
+
+    /**
      * @param string $sheetDataXMLFilePath Path of the sheet data XML file as in [Content_Types].xml
      *
      * @return string path of the XML file containing the sheet data,
@@ -321,6 +340,24 @@ final class RowIterator implements RowIteratorInterface
         $node = $xmlReader->expand();
         \assert($node instanceof DOMElement);
         $cell = $this->cellValueFormatter->extractAndFormatNodeValue($node);
+
+        $this->currentlyProcessedRow->setCellAtIndex($cell, $currentColumnIndex);
+        $this->lastColumnIndexProcessed = $currentColumnIndex;
+
+        return XMLProcessor::PROCESSING_CONTINUE;
+    }
+
+    /**
+     * @param XMLReader $xmlReader XMLReader object, positioned on a "<cell>" starting node
+     *
+     * @return int A return code that indicates what action should the processor take next
+     */
+    private function processCountableCellStartingNode(XMLReader $xmlReader): int
+    {
+        $currentColumnIndex = $this->getColumnIndex($xmlReader);
+
+        // Just a dummy cell for counting
+        $cell = Cell::fromValue(false);
 
         $this->currentlyProcessedRow->setCellAtIndex($cell, $currentColumnIndex);
         $this->lastColumnIndexProcessed = $currentColumnIndex;
