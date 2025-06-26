@@ -36,7 +36,7 @@ final class DateIntervalFormatHelperTest extends TestCase
     }
 
     #[DataProvider('getExcelFormatsToPhpFormats')]
-    public function testIsDurationFormatValid(string $excelDateFormat): void
+    public function testIsDurationFormatValid(string $excelDateFormat, string $expectedPHPDateFormat): void
     {
         self::assertTrue(DateIntervalFormatHelper::isDurationFormat($excelDateFormat));
     }
@@ -50,7 +50,8 @@ final class DateIntervalFormatHelperTest extends TestCase
     #[DataProvider('getExcelFormatsToPhpFormats')]
     public function testToPHPDateFormat(string $excelDateFormat, string $expectedPHPDateFormat): void
     {
-        $phpDateFormat = DateIntervalFormatHelper::toPHPDateIntervalFormat($excelDateFormat);
+        $startUnit = '';
+        $phpDateFormat = DateIntervalFormatHelper::toPHPDateIntervalFormat($excelDateFormat, $startUnit);
         self::assertSame($expectedPHPDateFormat, $phpDateFormat);
     }
 
