@@ -100,7 +100,17 @@ final class StyleManagerTest extends TestCase
         self::assertFalse($shouldFormatAsDate);
     }
 
-    public static function dataProviderForCustomDateFormats(): array
+    #[DataProvider('provideShouldFormatNumericValueAsDateWithCustomDateFormatsCases')]
+    public function testShouldFormatNumericValueAsDateWithCustomDateFormats(string $numberFormat, bool $expectedResult): void
+    {
+        $numFmtId = 165;
+        $styleManager = $this->getStyleManagerMock([[], ['applyNumberFormat' => true, 'numFmtId' => $numFmtId]], [$numFmtId => $numberFormat]);
+        $shouldFormatAsDate = $styleManager->shouldFormatNumericValueAsDate(1);
+
+        self::assertSame($expectedResult, $shouldFormatAsDate);
+    }
+
+    public static function provideShouldFormatNumericValueAsDateWithCustomDateFormatsCases(): iterable
     {
         return [
             // number format, expectedResult
@@ -132,14 +142,21 @@ final class StyleManagerTest extends TestCase
         ];
     }
 
-    #[DataProvider('dataProviderForCustomDateFormats')]
-    public function testShouldFormatNumericValueAsDateWithCustomDateFormats(string $numberFormat, bool $expectedResult): void
+    public function testShouldFormatScientificNotationAsDate(): void
     {
-        $numFmtId = 165;
-        $styleManager = $this->getStyleManagerMock([[], ['applyNumberFormat' => true, 'numFmtId' => $numFmtId]], [$numFmtId => $numberFormat]);
+        $styleManager = $this->getStyleManagerMock(
+            [
+                1 => [
+                    'numFmtId' => 165,
+                    'applyNumberFormat' => null,
+                ],
+            ],
+            [
+                165 => '0.00E+00',
+            ],
+        );
         $shouldFormatAsDate = $styleManager->shouldFormatNumericValueAsDate(1);
-
-        self::assertSame($expectedResult, $shouldFormatAsDate);
+        self::assertFalse($shouldFormatAsDate);
     }
 
     private function getStyleManagerMock(array $styleAttributes = [], array $customNumberFormats = []): StyleManager
